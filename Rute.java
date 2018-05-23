@@ -1,18 +1,31 @@
 /**
   En Rute instans representerer et felt i labyrinten.
 */
+import java.util.ArrayList;
+
 abstract class Rute{
 
   private int kolonne, rad;
-  private Labyrint labyrint;
+  private String toStringString;
+  protected Labyrint labyrint;
   private Rute nord = null;
   private Rute ost = null;
   private Rute sor = null;
   private Rute vest = null;
 
+  private ArrayList<GrafKant> grafKanter;
+
   public Rute(int kolonne, int rad){
     this.kolonne = kolonne;
     this.rad = rad;
+    grafKanter = new ArrayList<GrafKant>(4);
+    StringBuilder sb = new StringBuilder(10);
+    sb.append("(");
+    sb.append(kolonne);
+    sb.append(", ");
+    sb.append(rad);
+    sb.append(")");
+    toStringString = sb.toString();
     }
 
   public void settLabyrint(Labyrint labyrint){
@@ -25,6 +38,17 @@ abstract class Rute{
     this.sor = sor;
     this. vest = vest;
   }
+
+  public Rute hentSorNabo(){ return sor; }
+
+
+  public void leggTilGrafKant(GrafKant gk){
+    if(!grafKanter.contains(gk)){  grafKanter.add(gk); }
+  }
+
+  public ArrayList<GrafKant> hentGrafkanter(){ return grafKanter; }
+
+  public int hentAntGrafKanter(){ return grafKanter.size(); }
 
   public void finnUtvei(){
     gaa(null, "");
@@ -70,6 +94,46 @@ abstract class Rute{
 
   }
 
+  /**
+    Metode som finner mulige utveier fra denne ruten og legger til i utveier i
+    labyrint-instansen:
+  */
+  public void grafFinnUtvei(){
+    // Bygger opp string til nærmeste node dersom this IKKE er en node:
+    if(grafKanter.size() == 1){
+      // Bygger vei-streng til nærmeste node den ene veien og kaller grafGaa:
+      GrafKant gk = grafKanter.get(0);
+      String veien1 = gk.toString(this, true);
+      Rute node1 = gk.hentNode(1);
+      node1.grafGaa(gk, veien1);
+      // Bygger vei-streng til nærmeste node den andre veien og kaller grafGaa:
+      String veien2 = gk.toString(this, false);
+      Rute node2 = gk.hentNode(0);
+      node2.grafGaa(gk, veien2);
+    }
+    else{
+      // Rute klikket på er en node, gå rett til grafGaa!
+        grafGaa(null, "");
+    }
+  }
+
+  protected void grafGaa(GrafKant komFraGK, String veien){
+    //vis("Gaa på node " + this.toString());
+    int testAntall = 0;
+    //Avslutning pga Åpning fanges opp i subklassen Aapning
+    if(!veien.contains(this.toString())){
+      for(GrafKant gk : grafKanter){
+        String veiKopi = veien + "";
+        if(gk != komFraGK){
+          Rute nesteNode = gk.hentNodeMenIkke(this);
+          veiKopi += gk.toString(nesteNode);
+          nesteNode.grafGaa(gk, veiKopi);
+          testAntall++;
+        }
+      }
+    }
+  }
+
   public int hentKol(){ return kolonne; }
 
   public int hentRad(){ return rad; }
@@ -82,13 +146,7 @@ abstract class Rute{
   }
 
   @Override
-  public String toString(){
-    StringBuilder sb = new StringBuilder(10);
-    sb.append("(");
-    sb.append(kolonne);
-    sb.append(", ");
-    sb.append(rad);
-    sb.append(")");
-    return sb.toString();
-  }
+  public String toString(){ return toStringString; }
+
+  private void vis(String s){ System.out.println(s); }
 }

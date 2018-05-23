@@ -5,6 +5,7 @@ public class GrafKant{
   private ArrayList<Rute> ruterPaaDenneVeien; //inkl fra/til
   private Rute[] noder;
   private int antallNoder;
+  private boolean erSortert = false; // til test av sortering
 
 
   public GrafKant(){
@@ -20,32 +21,33 @@ public class GrafKant{
 
   public void leggTilNode(Rute r){
     noder[antallNoder++] = r;
-    if(antallNoder == 2){ sorterRuter(); }
+    if(antallNoder == 2){
+      erSortert = true;
+      ruterPaaDenneVeien = sorterOgMerkRuter(); }
   }
 
+  public boolean sortert(){return erSortert; }
+
   public Rute hentNode(int n){ return noder[n]; }
+
+  public Rute hentNodeMenIkke(Rute r){
+    if(noder[0] != r){ return noder[0]; } else{ return noder[1]; }
+  }
 
   public int hentAntallNoder(){ return antallNoder; }
 
   public boolean erKomplett(){ return (antallNoder == 2); }
 
-  public String hentDetaljer(){
-    String s = "Grafkant med " + antallNoder + " noder :";
-    for(int i = 0; i < antallNoder; i++){
-      s += (noder[i].hentDetaljer() + " ");
-
-    }
-    s += (" Antall ruter: " + ruterPaaDenneVeien.size());
-    return s;
-  }
-
   public int hentAntallRuter(){ return ruterPaaDenneVeien.size(); }
 
-  private void sorterRuter(){
+  private ArrayList<Rute> sorterOgMerkRuter(){
+    for(Rute r : ruterPaaDenneVeien){
+    }
     // Legger rutene i rekkefølge:
     ArrayList<Rute> ruterSortert = new ArrayList<Rute>(ruterPaaDenneVeien.size());
     Rute her = noder[0];
     ruterSortert.add(her);
+    //System.out.println("Sortert legger inn: " + her.toString());
     ruterPaaDenneVeien.remove(noder[0]);
     boolean funnet;
     int i;
@@ -60,24 +62,73 @@ public class GrafKant{
            (r.hentRad() == her.hentRad() && Math.abs(r.hentKol() - her.hentKol()) == 1)){
           // Har funnet neste rute:
           her = ruterPaaDenneVeien.get(i);
-          ruterSortert.add(ruterPaaDenneVeien.remove(i));
+          //System.out.println("Sortert legger inn: " + her.toString());
+          ruterSortert.add(ruterPaaDenneVeien.remove(i--));
           funnet = true;
         }
         i++;
       }
     }
-    ruterPaaDenneVeien = ruterSortert;
+    for(Rute r : ruterSortert){ r.leggTilGrafKant(this); }
+    return ruterSortert;
   }
 
   @Override
   public String toString(){
     StringBuilder sb = new StringBuilder(100);
+    //sb.append("!");
     for(int i = 0; i < ruterPaaDenneVeien.size(); i++){
       Rute r = ruterPaaDenneVeien.get(i);
       sb.append(r.toString());
       if(i < (ruterPaaDenneVeien.size() - 1)){ sb.append("-->"); }
     }
+    //sb.append("!");
     return sb.toString();
+  }
+
+  public String toString(Rute fra, boolean retning){
+    //Returnerer steng med ruter i listen, UNNTATT SISTE RUTE!
+    StringBuilder sb = new StringBuilder(100);
+    int fraIndx = ruterPaaDenneVeien.indexOf(fra);
+    if(retning){
+      for(int i = fraIndx; i < ruterPaaDenneVeien.size() - 1; i++){
+        sb.append(ruterPaaDenneVeien.get(i));
+        sb.append("-->");
+      }
+    }
+    else{
+      for(int i = fraIndx; i > 0; i--){
+        sb.append(ruterPaaDenneVeien.get(i));
+        sb.append("-->");
+      }
+    }
+    return sb.toString();
+  }
+
+  public String toString(Rute til){
+    StringBuilder sb = new StringBuilder(100);
+    if(til == noder[1]){
+      for(int i = 0; i < ruterPaaDenneVeien.size() - 1; i++){
+        sb.append(ruterPaaDenneVeien.get(i));
+        sb.append("-->");
+      }
+    }
+    else{
+      for(int i = ruterPaaDenneVeien.size() - 1; i > 0; i--){
+        sb.append(ruterPaaDenneVeien.get(i));
+        sb.append("-->");
+      }
+    }
+    return sb.toString();
+  }
+
+  public String hentDetaljer(){
+    String s = "Grafkant med " + antallNoder + " noder :";
+    for(int i = 0; i < antallNoder; i++){
+      s += (noder[i].hentDetaljer() + " ");
+    }
+    s += (" Antall ruter: " + ruterPaaDenneVeien.size());
+    return s;
   }
 
 }

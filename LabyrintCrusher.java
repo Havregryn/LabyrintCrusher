@@ -46,24 +46,18 @@ class LabyrintCrusher{
 
                 Liste<String> utveier = l.finnUtveiFra(startKol, startRad);
                 if(detaljer){ System.out.println("\n"); }
-                int minsteLengde = 0;
-                String korteste = "";
                 if (utveier.stoerrelse() != 0) {
                     for (String s : utveier) {
                       System.out.println("\nUtvei med " + antallRuter(s) + " ruter:");
                         System.out.println(s);
-                        // Finner korteste vei:
-                        if(minsteLengde == 0 || s.length() < minsteLengde ){
-                          minsteLengde = s.length();
-                          korteste = s;
-                        }
                     }
-                    if(detaljer){ System.out.println("\nGaa metoden ble utført " + l.hentGaaAntall() + " ganger."); }
                     System.out.println("\nDet ble funnet " + utveier.stoerrelse() + " mulige utveier.\n" +
-                                       "Korteste utvei med " + antallRuter(korteste) +" ruter er:\n" + korteste);
+                                       "Korteste utvei har " + antallRuter(utveier.hent(0)) +" ruter.\n" +
+                                       "Lengste utvei har " + antallRuter(utveier.hent(utveier.stoerrelse() - 1)) + " ruter.");
                 } else {
                     System.out.println("Ingen utveier.");
                 }
+                System.out.println("Det tok " + (l.hentTid()/1000000.0) + " ms å finne utveiene.");
                 System.out.println();
             } catch (NumberFormatException e) {
                 System.out.println("Ugyldig input!");

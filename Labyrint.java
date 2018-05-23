@@ -11,13 +11,17 @@ import java.time.Duration;
 class Labyrint{
   private boolean dt = true; // Visertest - detaljer;
 
+  //TEST:
+  private GrafKant testKant, testKant2, testkant3;
+
   private int antallKolonner, antallRader;
   private Rute[][] ruter;  // [kolonne][rad]
   private ArrayList<GrafKant> grafKantene;
-  private Lenkeliste<String> utveier;
+  private UtveiSortertListe<String> utveier;
   private boolean detaljer;
   private int gaaAntall = 0; // Teller antall ganger gaa kalles på.
   private Instant foer, etter;
+  private long intervall; // Måler tiden en prosess tar i ns.
 
   // privat konstruktør som kalles fra lesFraFil:
   private Labyrint(Rute[][] ruter, int antallKolonner, int antallRader){
@@ -87,15 +91,8 @@ class Labyrint{
     }
   }
 
-  public Liste<String> finnUtveiFra(int kol, int rad)throws ArrayIndexOutOfBoundsException{
-    utveier = new Lenkeliste<String>();
-    gaaAntall = 0;
-    ruter[kol][rad].finnUtvei();
-    return utveier;
-  }
-
   public void leggTilUtvei(String utvei){
-    utveier.leggTil(utvei);
+    utveier.leggTilUtvei(utvei);
   }
 
   public void settDetaljer(boolean detaljer){ this.detaljer = detaljer; }
@@ -105,6 +102,10 @@ class Labyrint{
   public void leggTilGaaAntall(){ gaaAntall++; }
 
   public int hentGaaAntall(){ return gaaAntall; }
+
+  public double hentTid(){ return intervall; }
+
+
 
   @Override
   public String toString(){
@@ -118,7 +119,8 @@ class Labyrint{
     return utskrift;
   }
 
-  // Oppretter ArrayList med alle kanter:
+  // Oppretter ArrayList med alle kanter (edges) i graf.
+  // Ruter i kryss og Åpninger blir noder.
   public void finnGrafKanter(){
     foer = Instant.now();
     GrafKant[] forrigeRadKanter = new GrafKant[antallKolonner];
@@ -141,7 +143,6 @@ class Labyrint{
         if(rad < (antallRader - 1)){ nesteRad = ruter[kol][rad + 1]; } else{ nesteRad = null; }
 
         if(denne instanceof HvitRute || denne instanceof Aapning){
-          // DENNE RUTE ER HVIT!:
 
           //Sjekker om ensom, vei, tre veis-kryss eller 4-veis kryss:
           int hvitNaboTeller = 0;
@@ -207,10 +208,19 @@ class Labyrint{
             }
             else if(venstreHvit && forrigeRHvit){
               denneKant.leggTilRute(denne);
-              forrigeRadKanter[kol] = mergeGrafKanter(forrigeRadKanter[kol], denneKant);
-              if(forrigeRadKanter[kol].erKomplett()){
-                grafKantene.add(forrigeRadKanter[kol]);
+              GrafKant mergetGK = mergeGrafKanter(forrigeRadKanter[kol], denneKant);
+              ArrayList<Rute> ruter = mergetGK.hentRuter();
+              for(Rute r: ruter){
+                if((r.hentSorNabo() instanceof HvitRute || r.hentSorNabo() instanceof Aapning) &&
+                    !mergetGK.erKomplett() && r != mergetGK.hentNode(0)){
+                  if((r.hentKol() < kol && r.hentRad() == rad) ||
+                     (r.hentKol() > kol && r.hentRad() == rad - 1)){
+                       forrigeRadKanter[r.hentKol()] = mergetGK;
+                     }
+                }
               }
+              if(mergetGK.erKomplett()){ grafKantene.add(mergetGK); }
+
               denneKant = null;
               forrigeRadKanter[kol] = null;
             }
@@ -309,28 +319,31 @@ class Labyrint{
 
     etter = Instant.now();
 
+    intervall = Duration.between(foer, etter).toNanos();
+    vis("Det tok " + (intervall/1000000.0) + " ms å opprette grafen.");
 
 
-
-    vis("\nGRAFKANTENE:");
-    int sumRuter = 0;
-    for( int i = 0; i < grafKantene.size(); i++){
-      vis(i + " " + grafKantene.get(i).hentDetaljer());
-      vis("  " + grafKantene.get(i).toString());
-      sumRuter += grafKantene.get(i).hentAntallRuter();
-    }
-
-
-    vis("Snitt antall ruter er: " + (sumRuter / grafKantene.size()));
-    long intervall = Duration.between(foer, etter).toMillis();
-    vis("Det tok " + intervall + " ms å lage grafen.");
   } // metode finnGrafKanter
 
   public GrafKant mergeGrafKanter(GrafKant vinner, GrafKant taper ){
+
     ArrayList<Rute> taperRuter= taper.hentRuter();
     for(Rute r : taperRuter){ vinner.leggTilRute(r); }
-    if(taper.hentAntallNoder() == 1){ vinner.leggTilNode(taper.hentNode(0)); }
+    if(taper.hentAntallNoder() == 1){
+      vinner.leggTilNode(taper.hentNode(0));
+
+    }
+    //vis("Merget : " + vinner.toString());
     return vinner;
+  }
+
+  public Liste<String> finnUtveiFra(int kol, int rad)throws ArrayIndexOutOfBoundsException{
+    foer = Instant.now();
+    utveier = new UtveiSortertListe<String>();
+    ruter[kol][rad].grafFinnUtvei();
+    etter = Instant.now();
+    intervall = Duration.between(foer, etter).toNanos();
+    return utveier;
   }
 
   private void vis(String s){ System.out.println(s); }
